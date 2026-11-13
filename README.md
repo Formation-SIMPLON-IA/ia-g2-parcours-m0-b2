@@ -14,10 +14,12 @@ les livrables et les critères. Ce README est votre tableau de bord au quotidien
 
 ---
 
-## 🚀 Démarrage (3 commandes)
+## 🚀 Démarrage (4 étapes)
 
 ```bash
 # 0. Clone le repo du binôme et crée ta branche
+#    (la personne invitée accepte d'abord l'invitation reçue par mail ;
+#     sans clé SSH, utilise l'adresse https://github.com/... du repo)
 git clone git@github.com:<user>/M0-B2-sentiment-<prenom1>-<prenom2>.git
 cd M0-B2-sentiment-<prenom1>-<prenom2>
 git switch -c <prenom>
@@ -61,14 +63,22 @@ git push -u origin <prenom>
 # Récupérer ce que l'autre a mergé
 git switch main && git pull
 git switch <prenom> && git merge main
+git push
+# Refais ces trois lignes avant d'ouvrir chaque Pull Request.
 ```
 
 - Une PR vers `main` **au minimum à la fin de chaque séance** et avant le rendu.
 - Tes livrables individuels vont dans **`rendu/<prenom>/`** : chacun a son
   dossier, donc pas de conflit.
+- Le `README.md` de la racine est commun : **une seule personne le modifie**,
+  l'autre lui envoie son texte.
+- Ne commite jamais directement sur `main`.
 - Messages de commit : `type(scope): description`.
-- En cas de conflit sur un fichier commun : ne force rien, demande de l'aide
-  dans le fil Discord du brief.
+- Si `git merge main` annonce un conflit : ouvre le fichier, garde ce qu'il
+  faut entre `<<<<<<<` et `>>>>>>>`, supprime ces marqueurs, puis
+  `git add <fichier> && git commit && git push`. Si tu bloques (ou si tu as
+  commité sur `main` par erreur) : ne force rien, demande dans le fil Discord
+  du brief.
 
 ---
 

@@ -6,3 +6,4 @@ Un dossier par personne : `rendu/<prenom>/`.
 - `postman_collection.json` : ta collection (≥ 5 requêtes)
 
 Chacun écrit seulement dans son dossier : pas de conflit au merge.
+Le `README.md` de la racine, lui, est commun : une seule personne le modifie.
