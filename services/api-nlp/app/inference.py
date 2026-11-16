@@ -67,9 +67,11 @@ def predict_sentiment(pipeline: Any, text: str, model_name: str) -> SentimentOut
     # TODO Tâche 3 — compléter :
     #
     # 1. Mesurer le temps d'inférence (time.perf_counter() avant/après).
-    # 2. Appeler `pipeline(text, top_k=None)` pour récupérer toutes les
-    #    probabilités (5 entrées, une par étoile).
-    # 3. Construire `scores_5_stars: dict[str, float]` à partir du résultat.
+    # 2. Appeler `raw = pipeline(text)` (sans argument en plus : le pipeline
+    #    est déjà construit avec `top_k=None` dans `main.py`). `raw` est une
+    #    liste contenant une liste de 5 dicts {'label', 'score'} : les
+    #    probabilités sont dans `raw[0]`.
+    # 3. Construire `scores_5_stars: dict[str, float]` à partir de `raw[0]`.
     # 4. Appliquer la règle écrite dans `# DECISION:` pour obtenir la classe
     #    métier : étoile la plus probable (puis `map_stars_to_sentiment`),
     #    ou somme des probabilités par groupe d'étoiles.

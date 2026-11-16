@@ -1,8 +1,9 @@
 # Pytest pour API — Mini-cours
 
-> Brief associé : M0-B1, repris tel quel pour M0-B2 (tâche 6)
-> Durée de lecture + pratique : ~45 min
-> Pré-requis : Python 3.11+, env virtuel actif avec `pytest` et `httpx` installés.
+> Brief associé : M0-B2 (tâche 6)
+> Pré-requis : la tâche 3 faite (`/predict` renvoie 3 classes). `pytest` et
+> `httpx` sont déjà installés dans l'image de l'API ; les tests se lancent
+> dans le conteneur.
 
 ## Pourquoi cette techno ?
 
@@ -47,6 +48,7 @@ Sur ce parcours, **pytest est imposé** par les conventions techniques du projet
 ## Exemple minimal qui tourne
 
 ```python
+# Exemple facultatif, hors conteneur (demande un environnement Python local)
 # tests/test_addition.py — exemple sans API pour comprendre pytest
 def addition(a: int, b: int) -> int:
     return a + b
@@ -71,7 +73,7 @@ def test_addition_param(a, b, attendu):
     assert addition(a, b) == attendu
 ```
 
-Lance :
+Lance (hors conteneur, facultatif) :
 
 ```bash
 pytest -v
@@ -84,16 +86,21 @@ rapport à `assertEqual`.
 ### Avec FastAPI TestClient
 
 ```python
-# tests/test_health.py
+# services/api-nlp/tests/test_health.py (livré au clone)
 from fastapi.testclient import TestClient
+
 from app.main import app
 
 
-def test_health():
+def test_health_endpoint_returns_200() -> None:
     with TestClient(app) as client:    # ← le `with` déclenche le lifespan
-        r = client.get("/health")
-        assert r.status_code == 200
-        assert r.json() == {"status": "ok", "model_loaded": True}
+        response = client.get("/health")
+    assert response.status_code == 200
+    body = response.json()
+    assert "status" in body
+    assert "model_loaded" in body
+    assert body["status"] in {"ok", "loading", "error"}
+    assert isinstance(body["model_loaded"], bool)
 ```
 
 Le `with` est **important** : sans lui, le `lifespan` qui charge le modèle ne
@@ -101,8 +108,9 @@ s'exécute pas, et `model_loaded` serait `False`.
 
 ## Exercice guidé
 
-Tu as déjà 2 tests pour `/health` dans `tests/test_health.py` (livrés au clone).
-**Ajoute 3 tests pour `/predict`** dans un nouveau fichier `tests/test_predict.py`.
+Tu as déjà **1 test** pour `/health` dans `services/api-nlp/tests/test_health.py`
+(livré au clone). **Ajoute 3 tests pour `/predict`** (dont un paramétré sur
+3 avis) dans un nouveau fichier `services/api-nlp/tests/test_predict.py`.
 
 **Cherche par toi-même** en t'appuyant sur la section *Concepts clés* et l'exemple
 *Avec FastAPI TestClient* ci-dessus. La solution est masquée plus bas — à révéler
@@ -112,41 +120,36 @@ seulement après ta tentative.
 
 1. Une **fixture `client`** de scope `module` qui ouvre un `TestClient(app)` avec
    `with` (pour déclencher le `lifespan`).
-2. **Test cas valide** : POST `/predict` avec un payload `compresseur` complet,
-   attendu `200` + `body["criticite"] in {"basse","moyenne","haute"}` +
-   somme des `probabilites.values()` ≈ 1.
-3. **Test cas invalide** : POST avec `type_machine: "INCONNU"`, attendu `422`
-   (validation Pydantic).
-4. **Test paramétré** : `@pytest.mark.parametrize` sur 4 types
-   (`pompe`, `convoyeur`, `presse`, `four`), chaque cas doit renvoyer `200`.
-
-**Payload de référence** (à adapter selon les tests) :
-```json
-{
-  "type_machine": "compresseur",
-  "age_machine_jours": 1500,
-  "derniere_maintenance_jours": 45,
-  "temperature_moyenne": 68.5,
-  "vibration_moyenne": 3.2,
-  "pression_moyenne": 7.8,
-  "nb_incidents_3_mois": 2
-}
-```
+2. **Test cas nominal** : POST `/predict` avec `{"texte": "Personnel charmant,
+   chambre impeccable, on reviendra !"}`, attendu `200` + `body["sentiment"]`
+   parmi `négatif / neutre / positif` + les 5 clés de `scores_5_stars`.
+3. **Test cas invalide** : POST avec `{"texte": ""}`, attendu `422` (validation
+   Pydantic).
+4. **Test paramétré** : `@pytest.mark.parametrize` sur **3 avis** que tu
+   recopies dans ton test, avec le sentiment que ton mapping doit renvoyer.
+   Recopie dans ton test le texte de 3 avis du CSV que ton mapping classe
+   correctement (le fichier CSV n'est pas accessible depuis le conteneur :
+   `data/` n'y est ni copié ni monté).
 
 ✅ **Résultat attendu** :
-- `pytest -v` affiche **6 tests** (2 sur `/health` + 4 sur `/predict`),
-  tous PASSED.
-- Le test paramétré exécute 4 cas (un par type de machine).
+- `docker compose exec api-nlp pytest -v` affiche **6 tests** (1 sur `/health`
+  + 1 nominal + 1 en 422 + 3 cas du test paramétré), tous PASSED.
+
+> Les tests sont copiés dans l'image au build. **Après avoir ajouté ou modifié
+> un test : `docker compose up --build -d`**, puis relance la commande
+> `docker compose exec api-nlp pytest -v`.
 
 <details>
 <summary>🔒 <strong>Solution</strong> — clique pour révéler (après avoir cherché)</summary>
 
 ```python
-# tests/test_predict.py
+# services/api-nlp/tests/test_predict.py
 import pytest
 from fastapi.testclient import TestClient
 
 from app.main import app
+
+SENTIMENTS = {"négatif", "neutre", "positif"}
 
 
 @pytest.fixture(scope="module")
@@ -156,57 +159,49 @@ def client():
         yield c
 
 
-# 1. Cas valide → 200 + structure attendue
-def test_predict_cas_valide(client):
-    payload = {
-        "type_machine": "compresseur",
-        "age_machine_jours": 1500,
-        "derniere_maintenance_jours": 45,
-        "temperature_moyenne": 68.5,
-        "vibration_moyenne": 3.2,
-        "pression_moyenne": 7.8,
-        "nb_incidents_3_mois": 2,
-    }
-    r = client.post("/predict", json=payload)
+# 1. Cas nominal -> 200 + structure attendue
+def test_predict_avis_positif_200(client):
+    r = client.post(
+        "/predict",
+        json={"texte": "Personnel charmant, chambre impeccable, on reviendra !"},
+    )
     assert r.status_code == 200
     body = r.json()
-    assert body["criticite"] in {"basse", "moyenne", "haute"}
-    assert set(body["probabilites"].keys()) == {"basse", "moyenne", "haute"}
-    # somme des probas ≈ 1
-    assert abs(sum(body["probabilites"].values()) - 1.0) < 1e-6
-
-
-# 2. Type machine invalide → 422 (validation Pydantic)
-def test_predict_type_machine_invalide(client):
-    payload = {
-        "type_machine": "INCONNU",
-        "age_machine_jours": 1000,
-        "derniere_maintenance_jours": 30,
-        "temperature_moyenne": 65.0,
-        "vibration_moyenne": 3.0,
-        "pression_moyenne": 8.0,
-        "nb_incidents_3_mois": 1,
+    assert body["sentiment"] in SENTIMENTS
+    assert set(body["scores_5_stars"]) == {
+        "1 star", "2 stars", "3 stars", "4 stars", "5 stars",
     }
-    r = client.post("/predict", json=payload)
+
+
+# 2. Texte vide -> 422 (validation Pydantic)
+def test_predict_texte_vide_422(client):
+    r = client.post("/predict", json={"texte": ""})
     assert r.status_code == 422
 
 
-# 3. Plusieurs scénarios paramétrés
-@pytest.mark.parametrize("type_m", ["pompe", "convoyeur", "presse", "four"])
-def test_predict_tous_types_machine(client, type_m):
-    payload = {
-        "type_machine": type_m,
-        "age_machine_jours": 2000,
-        "derniere_maintenance_jours": 60,
-        "temperature_moyenne": 70.0,
-        "vibration_moyenne": 3.5,
-        "pression_moyenne": 8.5,
-        "nb_incidents_3_mois": 2,
-    }
-    r = client.post("/predict", json=payload)
+# 3. Trois avis recopiés du CSV, avec le sentiment que le mapping A renvoie
+@pytest.mark.parametrize(
+    "texte,attendu",
+    [
+        ("Accueil glacial à la réception, chambre froide et bruyante, "
+         "nous ne reviendrons pas.", "négatif"),
+        ("Personnel charmant, chambre impeccable, petit-déjeuner copieux. "
+         "On reviendra avec plaisir.", "positif"),
+        ("Séjour correct sans plus. La chambre fait son âge mais reste "
+         "fonctionnelle pour une nuit.", "neutre"),
+    ],
+)
+def test_predict_avis_du_csv(client, texte, attendu):
+    r = client.post("/predict", json={"texte": texte})
     assert r.status_code == 200
-    assert r.json()["criticite"] in {"basse", "moyenne", "haute"}
+    assert r.json()["sentiment"] == attendu
 ```
+
+Le test `test_predict_avis_du_csv` suppose le mapping A (1-2 → négatif, 3 →
+neutre, 4-5 → positif) : les avis 1, 2 et 3 du CSV. Avec ton propre
+mapping, choisis 3 avis que **ton** mapping classe correctement (vérifie-le
+d'abord dans Swagger : certains avis du CSV sont mal classés, c'est l'objet
+du livrable B).
 
 </details>
 
@@ -252,10 +247,11 @@ toujours.**
 
 ## Vérification (checklist apprenant)
 
-- [ ] J'ai un fichier `tests/test_predict.py` avec **3 tests minimum**.
-- [ ] `pytest -v` affiche tous les tests PASSED.
+- [ ] J'ai un fichier `services/api-nlp/tests/test_predict.py` avec **3 tests minimum**.
+- [ ] `docker compose exec api-nlp pytest -v` affiche tous les tests PASSED (6 avec la solution du mini-cours).
 - [ ] J'ai utilisé une **fixture** pour partager le `TestClient`.
 - [ ] J'ai utilisé `@pytest.mark.parametrize` au moins une fois.
 - [ ] Je sais expliquer pourquoi le `with TestClient(app) as ...:` est nécessaire.
 - [ ] Je sais ce que veut dire **HTTP 422** et qui le déclenche (Pydantic).
-- [ ] Je sais comment lancer un seul test ciblé : `pytest tests/test_predict.py::test_predict_cas_valide -v`.
+- [ ] Je sais comment lancer un seul test ciblé : `docker compose exec api-nlp pytest tests/test_predict.py::test_predict_texte_vide_422 -v`.
+- [ ] Je sais qu'après avoir ajouté ou modifié un test, il faut `docker compose up --build -d`.

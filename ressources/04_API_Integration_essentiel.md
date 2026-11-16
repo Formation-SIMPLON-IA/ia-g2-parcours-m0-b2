@@ -71,6 +71,10 @@ parlera de résilience et de tolérance aux pannes.
 
 ## Exemple minimal qui tourne
 
+> Exemple **facultatif, hors conteneur** : il demande un environnement Python
+> local avec `httpx`. Tu peux t'en passer : l'appel que tu écris dans le brief
+> est celui de l'UI, dans Docker.
+
 ```python
 # /tmp/call_api.py
 import httpx
@@ -96,7 +100,7 @@ else:
     print(f"Latence : {data['latence_ms']} ms")
 ```
 
-Lancement (avec la stack M0-B2 démarrée) :
+Lancement (facultatif, hors conteneur, avec la stack M0-B2 démarrée) :
 
 ```bash
 python /tmp/call_api.py
@@ -119,8 +123,10 @@ complète :
 
 1. **Appel POST** avec `timeout=10` vers `{API_URL}/predict`
 2. **`raise_for_status()`** pour intercepter les 4xx/5xx
-3. **3 except** distincts :
+3. **4 except** distincts, du plus précis au plus général :
    - `httpx.TimeoutException` → message « API trop lente, réessaie »
+   - `httpx.ConnectError` (API arrêtée ou pas prête) → message clair
+     « API injoignable »
    - `httpx.HTTPStatusError` → afficher `status_code` et `response.text`
    - `httpx.HTTPError` (catch-all) → message générique
 4. **`else`** : extraire `data["sentiment"]`, `data["scores_5_stars"]`,
@@ -140,10 +146,12 @@ try:
     data = r.json()
 except httpx.TimeoutException:
     st.error("⏱️ API trop lente (>10s). Réessaie ou vérifie le service.")
+except httpx.ConnectError:
+    st.error("🔌 API injoignable : vérifie que le service `api-nlp` tourne (`docker compose ps`).")
 except httpx.HTTPStatusError as exc:
     st.error(f"HTTP {exc.response.status_code} : {exc.response.text}")
 except httpx.HTTPError as exc:
-    st.error(f"Erreur réseau : {exc}")
+    st.error(f"Erreur d'appel à l'API : {exc}")
 else:
     # afficher le sentiment, les scores, la latence (cf. mini-cours 03)
     ...
@@ -213,6 +221,6 @@ Symptôme → cause probable :
 - [ ] J'utilise `response.json()` quand l'API renvoie du JSON (pas
       `response.text` + `json.loads` manuel)
 - [ ] Mon UI Streamlit affiche un **message d'erreur clair** pour chaque type
-      d'échec API (timeout, HTTP error, réseau)
+      d'échec API (timeout, API injoignable, HTTP error)
 - [ ] J'ai pingé `/health` au démarrage pour valider que l'API est joignable
       (bonus)

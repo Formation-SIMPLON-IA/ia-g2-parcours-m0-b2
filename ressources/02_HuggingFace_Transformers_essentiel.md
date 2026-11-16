@@ -41,7 +41,9 @@ de 50-200 ms par texte court.
   ne pas oublier dans `requirements.txt`.
 - **`top_k=None`** dans le pipeline : retourne **toutes les classes**
   avec leur probabilité (utile pour le mapping 5★ → 3 et la traçabilité).
-  Par défaut, le pipeline ne renvoie que la classe top-1.
+  Par défaut, le pipeline ne renvoie que la classe top-1. Dans M0-B2, ce
+  réglage est **déjà fait au chargement** du pipeline (`main.py`) : à
+  l'appel, tu écris seulement `pipeline(text)`.
 - **Cache HF** : la 1ʳᵉ exécution télécharge le modèle depuis le Hub
   vers `~/.cache/huggingface/` (ou la variable `HF_HOME`). Les runs
   suivants chargent depuis le cache. Dans M0-B2, on monte ce cache en
@@ -78,6 +80,12 @@ liste de listes, un élément par texte. L'enveloppe est conservée même
 quand tu envoies un seul texte. Mémorise `result[0]` — c'est le piège HF
 débutant numéro 1.
 
+**Une seule façon d'appeler dans M0-B2 : `pipeline(text)`**, sans argument
+en plus. Le pipeline du service est déjà construit avec `top_k=None`
+(`main.py`). Si tu repasses `top_k=None` à l'appel, la forme du résultat
+change : tu obtiens une liste plate de 5 dictionnaires, `raw[0]` est alors
+un seul dictionnaire et ton code lève `TypeError`.
+
 ### 2. Le premier appel est lent (« warmup »)
 
 Le tout premier `pipeline(text)` après le chargement du modèle prend
@@ -96,6 +104,10 @@ lent — c'est attendu. En prod, on **précharge** avec un appel bidon au
 démarrage (« warmup request »).
 
 ## Exemple minimal qui tourne
+
+> Exemple **facultatif, hors conteneur** : il demande un environnement Python
+> local avec `transformers` et `torch`. Tu peux t'en passer, tout le brief
+> se fait dans Docker.
 
 ```python
 # /tmp/test_camembert.py
@@ -147,24 +159,38 @@ Dans `services/api-nlp/app/inference.py` du squelette, complète
 
 1. **Mesure le temps d'inférence** avec `time.perf_counter()` avant et
    après l'appel au pipeline.
-2. **Appelle** le pipeline : `pipeline(text, top_k=None)`. Note bien :
-   le résultat est une liste de listes — `result[0]` est la liste des
-   classes pour ton (unique) input.
+2. **Appelle** le pipeline : `pipeline(text)` (rien d'autre : `top_k=None`
+   est déjà réglé au chargement). Note bien : le résultat est une liste de
+   listes — `raw[0]` est la liste des 5 classes pour ton (unique) input.
 3. **Reconstruis** un `dict[str, float]` `scores_5_stars` à partir de
-   `result[0]`.
+   `raw[0]`.
 4. **Trouve** le label argmax (celui avec la plus haute proba). Indice :
-   `max(result[0], key=lambda x: x['score'])['label']`.
+   `max(raw[0], key=lambda x: x['score'])['label']`.
 5. **Appelle** `map_stars_to_sentiment(top_label)` pour obtenir la classe
    métier.
 6. **Retourne** un `SentimentOut(sentiment=..., scores_5_stars=...,
    model_name=model_name, latence_ms=...)`.
+7. **Branche la route** : dans `app/main.py`, remplace le `raise
+   HTTPException(... 501 ...)` de `/predict` par l'appel à
+   `inference.predict_sentiment(...)`.
 
 <details><summary>▶ Voir la solution complète (à dérouler seulement après avoir essayé)</summary>
 
 ```python
-def predict_sentiment(pipeline, text: str, model_name: str) -> SentimentOut:
+# app/inference.py — mapping d'exemple (découpage A) ; remplace-le par ta
+# règle écrite dans `# DECISION:`
+def map_stars_to_sentiment(star_label: str) -> Sentiment:
+    stars = int(star_label.split()[0])
+    if stars <= 2:
+        return "négatif"
+    if stars == 3:
+        return "neutre"
+    return "positif"
+
+
+def predict_sentiment(pipeline: Any, text: str, model_name: str) -> SentimentOut:
     start = time.perf_counter()
-    raw = pipeline(text, top_k=None)
+    raw = pipeline(text)
     latence_ms = (time.perf_counter() - start) * 1000
 
     scores_5_stars = {item["label"]: item["score"] for item in raw[0]}
@@ -178,6 +204,15 @@ def predict_sentiment(pipeline, text: str, model_name: str) -> SentimentOut:
         latence_ms=round(latence_ms, 2),
     )
 ```
+
+```python
+# app/main.py — dans la route /predict, après le contrôle de longueur,
+# à la place du `raise HTTPException(... 501 ...)`
+return inference.predict_sentiment(state["pipeline"], payload.texte, MODEL_NAME)
+```
+
+Puis `docker compose up --build -d` et teste dans Swagger
+(<http://localhost:8000/docs>).
 
 </details>
 
@@ -194,7 +229,8 @@ négatifs acceptables, coût d'un faux positif, etc.). Documente le tien.
 | Piège | Conséquence |
 |---|---|
 | Oublier `sentencepiece` ou `protobuf` dans `requirements.txt` | `ImportError` au chargement du tokenizer CamemBERT |
-| Ne pas mettre `top_k=None` | Le pipeline renvoie seulement le top-1, impossible de reconstruire les scores 5★ |
+| Retirer `top_k=None` du chargement du pipeline dans `main.py` | Le pipeline renvoie seulement le top-1, impossible de reconstruire les scores 5★ |
+| Repasser `top_k=None` à l'appel `pipeline(text, ...)` | Le résultat devient une liste plate de 5 dictionnaires : `raw[0]` est un dictionnaire, `TypeError` dans ta boucle |
 | Charger le pipeline à chaque requête `/predict` | Latence x10-20, mémoire qui explose. À charger une fois au `lifespan`. |
 | Ignorer la variable `HF_HOME` dans Docker | Le modèle est re-téléchargé à chaque `up` (270 Mo perdus, build de cache inutile) |
 | Mapper en dur sans justification | Le seuil de mapping est un **choix métier** — sans doc, impossible à maintenir |
@@ -207,6 +243,7 @@ Symptôme → cause probable :
 | `ModuleNotFoundError: No module named 'sentencepiece'` | Dep manquante dans `requirements.txt` |
 | `Failed to import google.protobuf` | Dep manquante (`protobuf>=3.20,<5`) |
 | Pipeline qui retourne `[{'label': 'LABEL_0', 'score': ...}]` | Modèle sans `id2label` dans sa config — vérifier la model card |
+| `TypeError: string indices must be integers` dans `predict_sentiment` | Tu as appelé `pipeline(text, top_k=None)` : appelle `pipeline(text)` et lis `raw[0]` |
 | Latence > 1 s par appel court | Le pipeline est re-instancié à chaque requête (pas chargé au lifespan) |
 | Conteneur qui exit OOMKilled | RAM insuffisante allouée à Docker Desktop (moins de 6 Go ; il en faut au moins 6), CamemBERT en a besoin de ~1 Go |
 | `OSError: Can't load tokenizer` après changement de modèle | Cache HF corrompu, supprimer `./models/` et relancer `docker compose up --build` |

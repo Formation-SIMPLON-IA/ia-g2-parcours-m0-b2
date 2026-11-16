@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "M0-B2 Aubergine Hôtels — sentiment FR",
-    "description": "Collection Postman de départ pour le brief M0-B2. Les requêtes `/health` et `/info` sont préremplies. Les requêtes `/predict` sont à compléter selon les cas que tu veux tester (happy path, cas limites, cas piégeux).",
+    "description": "Collection Postman de départ pour le brief M0-B2. Les 5 requêtes fournies (`/health`, `/info` et 3 requêtes `/predict`) sont préremplies. Complète la collection avec au moins 3 requêtes ajoutées : un texte trop long (plus de 2000 caractères, 422 attendu), un avis piégeux de ton choix, et un autre cas de ton choix.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [

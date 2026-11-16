@@ -125,6 +125,8 @@ bouton « Analyser ». 4 TODO listés en haut du fichier :
    injectée par compose (`http://api-nlp:8000`).
 2. **Gérer les erreurs** :
    - `httpx.TimeoutException` → message « API trop lente, réessaie »
+   - `httpx.ConnectError` (API arrêtée ou pas encore prête) → message clair
+     « API injoignable », traité **à part**
    - `httpx.HTTPStatusError` (500, 503, etc.) → message brut + statut
    - `httpx.HTTPError` (catch-all) → message générique
 3. **Afficher le sentiment** avec une couleur :
@@ -145,10 +147,12 @@ if st.button("Analyser", type="primary", disabled=not texte.strip()):
         data = r.json()
     except httpx.TimeoutException:
         st.error("⏱️ API trop lente (>10s). Réessaie ou vérifie le service.")
+    except httpx.ConnectError:
+        st.error("🔌 API injoignable : vérifie que le service `api-nlp` tourne (`docker compose ps`).")
     except httpx.HTTPStatusError as exc:
         st.error(f"HTTP {exc.response.status_code} : {exc.response.text}")
     except httpx.HTTPError as exc:
-        st.error(f"Erreur réseau : {exc}")
+        st.error(f"Erreur d'appel à l'API : {exc}")
     else:
         # Affichage sentiment
         sentiment = data["sentiment"]
@@ -184,7 +188,7 @@ Symptôme → cause probable :
 | Texte affiché doublement | Tu as appelé `st.write(...)` en dehors d'un `if`, donc à chaque re-run |
 | Le bouton se déclenche tout seul à chaque frappe | Pas de `if st.button(...)` autour de la logique |
 | `st.session_state` non persisté entre runs | Tu modifies une variable locale et pas `st.session_state["..."]` |
-| Erreur `httpx.ConnectError` random | Le service `api-nlp` est en cours de démarrage (lifespan) — utilise un `depends_on: condition: service_healthy` |
+| Erreur `httpx.ConnectError` random | Le service `api-nlp` est arrêté ou encore en cours de démarrage (chargement du modèle) — l'UI doit afficher « API injoignable » ; attends `healthy` dans `docker compose ps` puis réessaie |
 
 ## Pour aller plus loin
 

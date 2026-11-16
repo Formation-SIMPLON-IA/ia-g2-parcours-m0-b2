@@ -63,7 +63,11 @@ brique.
   qu'un service soit *prêt*, pas juste *démarré*.
 - **`depends_on`** : ordonne le démarrage. Avec `condition: service_healthy`,
   un service attend que sa dépendance soit `healthy` (et pas seulement
-  qu'elle ait démarré).
+  qu'elle ait démarré). Le `docker-compose.yml` fourni utilise
+  `condition: service_started` : l'interface démarre dès que le conteneur
+  `api-nlp` est lancé, sans attendre la fin du chargement du modèle. C'est
+  voulu : l'interface doit afficher un message clair si l'API n'est pas
+  prête ou est arrêtée (tâche 4), et pas seulement marcher quand tout va bien.
 
 ## Exemple minimal qui tourne
 
@@ -98,7 +102,8 @@ services:
     environment:
       API_URL: http://api-nlp:8000   # nom de service docker, pas localhost
     depends_on:
-      - api-nlp                      # attend que api-nlp soit démarré
+      api-nlp:
+        condition: service_started   # attend que le conteneur soit lancé, pas qu'il soit prêt
 
 networks:
   default:
@@ -172,8 +177,10 @@ fichier.**
 
    </details>
 
-Lance la stack avec `docker compose up --build`. Au bout de ~40 s,
-`docker compose ps` doit afficher :
+Lance la stack avec `docker compose up --build`. Premier démarrage : plusieurs
+minutes (build puis téléchargement du modèle). Démarrages suivants : `api-nlp`
+passe `healthy` en moins d'une minute. Ensuite `docker compose ps` doit
+afficher :
 
 ```
 NAME                  STATUS                  PORTS
@@ -185,10 +192,14 @@ Vérifie ensuite :
 
 ```bash
 curl http://localhost:8000/health   # depuis l'hôte → OK car port mappé
-# Depuis dans le conteneur UI Streamlit :
-docker compose exec ui-streamlit curl http://api-nlp:8000/health   # OK
-docker compose exec ui-streamlit curl http://localhost:8000/health # KO
+# Depuis dans le conteneur UI Streamlit (l'image n'a pas `curl`, on utilise Python) :
+docker compose exec ui-streamlit python -c "import httpx; print(httpx.get('http://api-nlp:8000/health').text)"   # OK
+docker compose exec ui-streamlit python -c "import httpx; print(httpx.get('http://localhost:8000/health').text)" # KO
 ```
+
+La première commande affiche `{"status":"ok","model_loaded":true}`. La seconde
+échoue avec `httpx.ConnectError: [Errno 111] Connection refused` : dans le
+conteneur UI, `localhost` désigne l'UI elle-même.
 
 ## Quand faut-il rebuild ?
 
@@ -219,7 +230,7 @@ fidèlement le comportement prod où on ne modifie pas le code à chaud.
 | Conflit de ports avec un service hôte (PostgreSQL local sur 8000, etc.) | `bind: address already in use` au démarrage |
 | Modifier le `docker-compose.yml` sans `down` puis `up` | Certaines modifs (ports, env, volumes) ne sont pas appliquées au simple `restart` |
 | Healthcheck avec un `start_period` trop court | Service marqué `unhealthy` à tort pendant le chargement du modèle (40-60 s pour CamemBERT) |
-| `depends_on` sans `condition: service_healthy` | Un service B démarre avant que A soit *prêt* (juste *démarré*), provoque des `connection refused` éphémères |
+| `depends_on` avec `condition: service_started` (cas du fichier fourni) | L'UI démarre avant que l'API soit *prête* (juste *démarrée*) : `connection refused` éphémères, d'où le message d'erreur clair attendu côté UI |
 
 Symptôme → cause probable :
 

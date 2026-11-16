@@ -1,8 +1,9 @@
 # Loguru — Mini-cours
 
-> Brief associé : M0-B1, repris tel quel pour M0-B2 (tâche 5)
+> Brief associé : M0-B2 (tâche 5)
 > Durée de lecture + pratique : ~30 min
-> Pré-requis : Python 3.11+, env virtuel actif avec `loguru` installé.
+> Pré-requis : la tâche 3 faite (`/predict` renvoie 3 classes). `loguru` est
+> déjà installé dans l'image de l'API.
 
 ## Pourquoi cette techno ?
 
@@ -82,7 +83,11 @@ def predire(data: dict) -> str:
 predire({})   # ValueError logguée automatiquement, pas besoin de try/except
 ```
 
-Lance le script. Tu vois :
+> L'exemple ci-dessus est **facultatif, hors conteneur** : il demande un
+> environnement Python local avec `loguru`. Tu peux passer directement à
+> l'exercice, qui se fait dans Docker.
+
+Si tu le lances, tu vois :
 
 - la console affiche les messages colorés ;
 - un dossier `logs/` apparaît avec `api.log` ;
@@ -90,8 +95,9 @@ Lance le script. Tu vois :
 
 ## Exercice guidé
 
-Sur le squelette **M0-B1**, ajoute le logging Loguru à l'endpoint `/predict` que
-tu as implémenté dans le mini-cours FastAPI.
+Dans le squelette **M0-B2**, ajoute le logging Loguru à l'endpoint `/predict`
+de `services/api-nlp/app/main.py` (branché sur `predict_sentiment()` à la
+tâche 3).
 
 **Cherche par toi-même** en t'appuyant sur les *Concepts clés* et l'*Exemple
 minimal* (étapes 1-2 du script ci-dessus). La solution est masquée plus bas — à
@@ -99,31 +105,34 @@ révéler seulement après ta tentative.
 
 **Tâches :**
 
-1. Dans `app/main.py`, en début de fichier, configurer un **sink fichier**
-   pointant vers `logs/api.log` avec rotation `"5 MB"`, retention `"7 days"`,
-   compression `"zip"`, niveau `INFO`, et `enqueue=True` (safe pour contextes
-   async / multi-thread). Penser à créer le dossier `logs/` via `pathlib`.
-2. Logger en `INFO` **avant** la prédiction (avec le payload reçu via
-   `item.model_dump()`).
-3. Logger en `INFO` **après** la prédiction, avec **la durée mesurée**
-   (`time.perf_counter()` avant/après l'appel modèle, conversion en ms).
-4. Ajouter `logs/` à `.gitignore` (si pas déjà fait).
-5. Lancer 5 requêtes à `/predict` (Swagger ou curl) et vérifier que
-   `logs/api.log` se remplit.
+1. Dans `app/main.py`, juste après la configuration `logger.add(sys.stderr, ...)`
+   déjà présente, ajouter un **sink fichier** pointant vers `logs/api.log`
+   avec rotation `"5 MB"`, retention `"7 days"`, compression `"zip"`, niveau
+   `INFO`, et `enqueue=True` (safe pour contextes async / multi-thread).
+   Penser à créer le dossier `logs/` via `pathlib`. Dans le conteneur,
+   `logs/` est le dossier `/app/logs`, déjà monté sur `./logs` de ton repo.
+2. Dans la route `/predict`, après la prédiction, écrire **une seule ligne**
+   `INFO` qui contient : le texte reçu **tronqué à 80 caractères**
+   (`payload.texte[:80]`), le **sentiment** prédit et la **latence en ms**
+   (déjà calculée dans la réponse : `result.latence_ms`).
+3. Vérifier que `logs/` est dans `.gitignore` (c'est déjà le cas dans le
+   template).
+4. Reconstruire (`docker compose up --build -d`), lancer 5 requêtes à
+   `/predict` (Swagger ou curl), puis lire les logs de deux façons :
+   `docker compose logs api-nlp` et le fichier `logs/api.log`.
 
 ✅ **Résultat attendu** :
-- console colorée pendant le run d'uvicorn ;
-- fichier `logs/api.log` avec une ligne INFO par requête ;
-- pas de log de niveau DEBUG (sauf si tu as changé le niveau) ;
-- les durées de prédiction visibles.
+- `docker compose logs api-nlp` montre une ligne par requête `/predict` ;
+- fichier `logs/api.log` avec la même ligne INFO par requête ;
+- le texte est coupé à 80 caractères, jamais l'avis complet ;
+- le sentiment et la latence sont visibles sur la ligne.
 
 <details>
 <summary>🔒 <strong>Solution</strong> — clique pour révéler (après avoir cherché)</summary>
 
 ```python
-# en début de app/main.py
+# app/main.py, juste après `logger.add(sys.stderr, ...)`
 from pathlib import Path
-from loguru import logger
 
 LOG_DIR = Path("logs")
 LOG_DIR.mkdir(exist_ok=True)
@@ -138,15 +147,21 @@ logger.add(
 ```
 
 ```python
-# dans la route /predict
-import time
+# dans la route /predict, à la place du `return inference.predict_sentiment(...)`
+result = inference.predict_sentiment(state["pipeline"], payload.texte, MODEL_NAME)
+logger.info(
+    "predict | texte={!r} | sentiment={} | latence={} ms",
+    payload.texte[:80],
+    result.sentiment,
+    result.latence_ms,
+)
+return result
+```
 
-logger.info(f"Requête /predict reçue : {item.model_dump()}")
+Exemple de ligne obtenue :
 
-t0 = time.perf_counter()
-# ... appel modèle ...
-duree_ms = (time.perf_counter() - t0) * 1000
-logger.info(f"Prédiction = {classe} (durée {duree_ms:.1f} ms)")
+```
+2026-11-16 10:12:03.512 | INFO     | app.main:predict:140 - predict | texte='Personnel charmant, chambre impeccable, on reviendra !' | sentiment=positif | latence=95.3 ms
 ```
 
 </details>
@@ -210,10 +225,10 @@ ce moment-là.
 
 ## Vérification (checklist apprenant)
 
-- [ ] Mon endpoint `/predict` logge une ligne INFO avant chaque appel modèle.
-- [ ] Mon endpoint logge une ligne INFO après, avec le résultat et la durée en ms.
+- [ ] Mon endpoint `/predict` logge **une ligne INFO par requête** : texte tronqué à 80 caractères, sentiment, latence en ms.
+- [ ] Je retrouve cette ligne avec `docker compose logs api-nlp` **et** dans `logs/api.log`.
 - [ ] Le dossier `logs/` est créé automatiquement.
 - [ ] `logs/` est dans mon `.gitignore`.
-- [ ] La rotation est configurée (j'ai testé en regénérant 5+ Mo de logs).
+- [ ] La rotation est configurée (`rotation="5 MB"` dans le code ; la tester en générant 5 Mo de logs est facultatif, non évalué).
 - [ ] Je sais expliquer en 1 minute la différence **DEBUG / INFO / WARNING / ERROR**.
 - [ ] Je sais ce que fait `enqueue=True` (thread-safe, indispensable en API).

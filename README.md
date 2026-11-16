@@ -8,12 +8,19 @@
 > c'est la personne dont le prénom vient en premier dans l'ordre alphabétique.
 > L'autre lui donne son identifiant GitHub, à l'oral ou par message.
 > 🧍 Poste solo : `M0-B2-sentiment-<prenom>`, sans invitation.
+> Repo public, ou privé avec la formatrice invitée en lecture (son
+> identifiant GitHub est donné sur Simplonline).
 >
-> Dans ce README, `<prenom>` = ton prénom en minuscules, sans accent.
+> Dans ce README, `<prenom>` = ton prénom en minuscules, sans accent, et
+> `<user>` = le compte GitHub de la personne qui a créé le repo.
+
+**Tout s'exécute dans Docker : ce brief ne demande aucun environnement virtuel
+Python sur ta machine.**
 
 Brief **M0-B2 « Déployer une IA NLP packagée — sentiment FR chez Aubergine
-Hôtels »**, 8 h en 3 temps : séance 1 (tâches 1 à 4), travail individuel
-(livrables A à D), séance 2 (tâches 5 et 6).
+Hôtels »**, 8 h en 3 temps : séance 1 (tâches 1 à 4 ; 3 h 45, dont 3 h 05 de
+tâches, le reste couvre le point d'étape, la pull request et la pause),
+travail individuel (livrables A à D), séance 2 (tâches 5 et 6).
 L'énoncé complet est publié sur **Simplonline** : c'est lui qui fait foi pour
 les livrables et les critères. Ce README est votre tableau de bord au quotidien.
 
@@ -30,7 +37,8 @@ git clone git@github.com:<user>/M0-B2-sentiment-<prenom1>-<prenom2>.git
 cd M0-B2-sentiment-<prenom1>-<prenom2>
 git switch -c <prenom>
 
-# 1. Configurer l'environnement
+# 1. Configurer l'environnement (Docker Desktop : au moins 6 Go de mémoire
+#    alloués, sinon le conteneur de l'API est tué sans message)
 cp .env.example .env
 
 # 2. Construire et lancer la stack
@@ -122,7 +130,7 @@ M0-B2-sentiment-<prenom1>-<prenom2>/
 │   │   │   ├── schemas.py         ← Pydantic ReviewIn / SentimentOut
 │   │   │   └── inference.py       ← TON CODE + mapping 5→3
 │   │   └── tests/
-│   │       └── test_health.py     ← 1 test pytest qui passe
+│   │       └── test_health.py     ← 1 test pytest qui passe (tu ajoutes test_predict.py)
 │   └── ui-streamlit/              ← UI utilisateur
 │       ├── Dockerfile
 │       ├── requirements.txt
@@ -140,12 +148,12 @@ M0-B2-sentiment-<prenom1>-<prenom2>/
 │   ├── 02_HuggingFace_Transformers_essentiel.md
 │   ├── 03_Streamlit_essentiel.md
 │   ├── 04_API_Integration_essentiel.md
-│   ├── 05_Loguru_essentiel.md     ← repris de M0-B1
-│   ├── 06_Pytest_API_essentiel.md ← repris de M0-B1
+│   ├── 05_Loguru_essentiel.md
+│   ├── 06_Pytest_API_essentiel.md
 │   ├── liens_officiels.md
 │   └── README.md
 ├── .gitignore
-└── README.md (ce fichier — à remplacer par la doc de votre service + les 3 preuves)
+└── README.md (ce fichier — à compléter : ajoutez en haut 5 à 10 lignes sur votre service et les 3 preuves ; gardez le reste)
 ```
 
 ---
@@ -177,12 +185,23 @@ la fin de la séance.
 | 2 | Lire le squelette + la fiche du modèle, **écrire `# DECISION:`** | — | 30 min |
 | 3 | Implémenter `/predict` + **mapping 5★ → 3 classes** | [`02_HuggingFace_Transformers`](./ressources/02_HuggingFace_Transformers_essentiel.md) | 1 h 15 |
 | 4 | Brancher l'UI Streamlit à l'API | [`03_Streamlit`](./ressources/03_Streamlit_essentiel.md) + [`04_API_Integration`](./ressources/04_API_Integration_essentiel.md) | 50 min |
-| ✔ | PR vers `main` | — | 10 min |
+| ✔ | PR vers `main` | — | — |
 
 **Après chaque modification de code : `docker compose up --build` (sinon le conteneur exécute l'ancienne version).** Voir [`01_DockerCompose`](./ressources/01_DockerCompose_essentiel.md).
 
 En binôme : l'un sur l'étape 3, l'autre sur l'étape 4, puis échange à
-mi-séance. Poste solo : étape 3 puis étape 4.
+mi-séance. Mécanique d'échange en 3 lignes :
+
+1. chacun pousse sa branche (`git push -u origin <prenom>`) et ouvre une pull request vers `main` ;
+2. l'autre la fusionne ;
+3. chacun fait `git switch main && git pull`, puis `git switch <prenom> && git merge main`.
+
+Explication mutuelle : à l'oral ou par écrit (commentaire de pull request), au choix.
+Étape 4 : tant que `/predict` répond 501, teste d'abord l'affichage du message
+d'erreur ; le résultat nominal se teste après la fusion de l'étape 3. Pour
+tester le message « API arrêtée » : `docker compose stop api-nlp`, recharge
+l'interface, puis `docker compose start api-nlp`.
+🧍 Poste solo : étape 3 puis étape 4, pas d'échange.
 
 ### Entre les deux séances — individuel, dans `rendu/<prenom>/`
 
@@ -199,8 +218,8 @@ mi-séance. Poste solo : étape 3 puis étape 4.
 |---|---|---|---|
 | 5 | Logging Loguru (texte tronqué : `texte[:80]`) | [`05_Loguru`](./ressources/05_Loguru_essentiel.md) | 30 min |
 | 6 | Tests pytest `/predict` (≥ 3) | [`06_Pytest_API`](./ressources/06_Pytest_API_essentiel.md) | 35 min |
-| ✔ | 3 preuves dans le README + PR vers `main` + lien sur Simplonline | — | 10 min |
-| E/F/G | **Bonus** : healthcheck personnalisé avec plus de tentatives · `/predict/batch` · « pourquoi pas un LLM ? » | — | 30 min chacun |
+| ✔ | 3 preuves dans le README + PR vers `main` + lien sur Simplonline | — | — |
+| E/F/G | **Bonus** : healthcheck personnalisé avec plus de tentatives · `/predict/batch` · « pourquoi pas un LLM ? » | — | — |
 
 **Après chaque modification de code : `docker compose up --build` (sinon le conteneur exécute l'ancienne version).** Voir [`01_DockerCompose`](./ressources/01_DockerCompose_essentiel.md).
 
@@ -239,6 +258,7 @@ même requête depuis Swagger (`/docs`) ou Postman et colle la réponse.
 
 ```bash
 docker compose exec api-nlp pytest -v      # tests dans le conteneur API
+# après avoir ajouté ou modifié un test : docker compose up --build -d
 docker compose ps                          # api-nlp doit être (healthy)
 ```
 
@@ -259,7 +279,7 @@ docker compose ps                          # api-nlp doit être (healthy)
 | L'UI affiche « API non branchée » | Compléter `app.py` dans `services/ui-streamlit/` |
 | `Connection refused` depuis l'UI | `API_URL` = `http://api-nlp:8000` (nom de service), pas `localhost` |
 | `ModuleNotFoundError` | Rebuild : `docker compose build --no-cache api-nlp` |
-| Service `unhealthy` après 2 min | `docker compose logs api-nlp` (réseau / mémoire / chargement modèle) |
+| Service `unhealthy` après 2 min | Au premier démarrage, le statut peut passer par `unhealthy` pendant le téléchargement du modèle, puis revenir à `healthy` : attends. Si ça persiste : `docker compose logs api-nlp` (réseau / mémoire / chargement modèle) |
 | Conteneur tué sans message | Mémoire Docker inférieure à 6 Go : augmente-la dans Docker Desktop (au moins 6 Go) |
 
 Logs en temps réel : `docker compose logs -f api-nlp`.

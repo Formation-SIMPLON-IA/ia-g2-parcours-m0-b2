@@ -15,14 +15,17 @@
 | [`02_HuggingFace_Transformers_essentiel.md`](./02_HuggingFace_Transformers_essentiel.md) | Tâche 3 (implémenter `/predict` + mapping 5★→3) | ~35 min |
 | [`03_Streamlit_essentiel.md`](./03_Streamlit_essentiel.md) | Tâche 4 (UI utilisateur) | ~25 min |
 | [`04_API_Integration_essentiel.md`](./04_API_Integration_essentiel.md) | Tâche 4 (côté UI : httpx + gestion erreurs) | ~25 min |
-| [`05_Loguru_essentiel.md`](./05_Loguru_essentiel.md) | Tâche 5 (journalisation) — repris de M0-B1 | ~30 min |
-| [`06_Pytest_API_essentiel.md`](./06_Pytest_API_essentiel.md) | Tâche 6 (tests) — repris de M0-B1 | ~45 min |
+| [`05_Loguru_essentiel.md`](./05_Loguru_essentiel.md) | Tâche 5 (journalisation) | ~30 min |
+| [`06_Pytest_API_essentiel.md`](./06_Pytest_API_essentiel.md) | Tâche 6 (tests) | — |
 | [`liens_officiels.md`](./liens_officiels.md) | Recherche méthodique à tout moment | — |
 
-> 💡 Les mini-cours `05` et `06` sont ceux de M0-B1, copiés ici pour que tu
-> n'aies pas à changer de repo. Leurs exemples portent sur l'API de M0-B1 :
-> le geste est le même, seuls les noms de routes et de champs changent.
+> 💡 Les mini-cours `05` et `06` reprennent les notions de M0-B1, avec des
+> exercices écrits pour cette stack (`/predict`, `payload.texte`).
 > Pour le Dockerfile, relis `02_Docker_essentiel.md` dans ton repo M0-B1.
+
+> Tout s'exécute dans Docker : ce brief ne demande aucun environnement virtuel
+> Python sur ta machine. Les exemples marqués « facultatif, hors conteneur »
+> demandent un environnement Python local : tu peux les ignorer.
 
 **Ressources legacy OPCO ATLAS** (compléments optionnels) : disponibles
 **à la demande sur Discord** auprès de la formatrice. Pour M0-B2, la doc
@@ -30,9 +33,9 @@ Streamlit ATLAS (~1620 mots, plus détaillée que notre mini-cours)
 complète utilement `03_Streamlit_essentiel.md`.
 
 ## Ordre suggéré de consultation
-1. **Avant la séance 1** (10 min) : lire la « Situation professionnelle »
-   du brief sur Simplonline + le README à la racine + parcourir
+1. **Avant la séance 1** : lire le README à la racine + parcourir
    `01_DockerCompose_essentiel.md` (au moins la section « Pourquoi »).
+   Lire la « Situation professionnelle » du brief sur Simplonline : facultatif.
 2. **Pendant les séances** : ouvrir chaque mini-cours dans l'ordre des
    tâches (`01` pour le démarrage, `02` pour `/predict`, `03` + `04`
    pour l'UI, `05` pour les logs, `06` pour les tests).
