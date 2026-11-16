@@ -197,7 +197,7 @@ Symptôme → cause probable :
   `st.navigation` et l'organisation d'une app à plusieurs vues — préfigure
   ce qu'on fera en M7-B2) : <https://github.com/streamlit/llm-examples>
 - **Doc OPCO ATLAS legacy** (~1620 mots, plus détaillé) : disponible **à
-  la demande sur Discord** auprès de Marianne
+  la demande sur Discord** auprès de la formatrice
 
 ## Vérification (checklist apprenant)
 

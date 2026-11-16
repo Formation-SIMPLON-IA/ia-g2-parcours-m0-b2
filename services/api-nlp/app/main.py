@@ -138,7 +138,7 @@ def predict(payload: ReviewIn) -> SentimentOut:
             detail=f"Texte trop long (> {MAX_TEXT_LENGTH} caractères).",
         )
 
-    # TODO Tâche 3 — Appeler inference.predict_sentiment() et logger la requête.
+    # TODO Tâche 3 — Appeler inference.predict_sentiment(). (logging: task 5)
     # Pour l'instant, on signale que ce n'est pas implémenté.
     raise HTTPException(
         status_code=status.HTTP_501_NOT_IMPLEMENTED,

@@ -5,7 +5,7 @@ Le modèle CamemBERT chargé sort des labels 5 étoiles
 veut 3 classes (`négatif`, `neutre`, `positif`).
 
 → Ton travail dans ce fichier :
-   1. Implémenter `predict_sentiment()` (récupère scores 5★ + appelle map).
+   1. Implémenter `predict_sentiment()` (récupère les scores 5★ + applique ta règle).
    2. Implémenter `map_stars_to_sentiment()` (mapping 5★ → 3 classes).
    3. Écrire ta règle dans le commentaire `# DECISION:` ci-dessous AVANT de coder.
 
@@ -70,8 +70,8 @@ def predict_sentiment(pipeline: Any, text: str, model_name: str) -> SentimentOut
     # 2. Appeler `pipeline(text, top_k=None)` pour récupérer toutes les
     #    probabilités (5 entrées, une par étoile).
     # 3. Construire `scores_5_stars: dict[str, float]` à partir du résultat.
-    # 4. Identifier le label argmax (la plus haute proba).
-    # 5. Appeler `map_stars_to_sentiment(label_argmax)` pour obtenir la
-    #    classe métier.
-    # 6. Renvoyer un `SentimentOut(...)`.
+    # 4. Appliquer la règle écrite dans `# DECISION:` pour obtenir la classe
+    #    métier : étoile la plus probable (puis `map_stars_to_sentiment`),
+    #    ou somme des probabilités par groupe d'étoiles.
+    # 5. Renvoyer un `SentimentOut(...)`.
     raise NotImplementedError("Compléter `predict_sentiment` (Tâche 3).")

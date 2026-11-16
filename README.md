@@ -2,9 +2,14 @@
 
 > **Repo template GitHub.** Une seule personne par binôme clique sur
 > **« Use this template »** → **Create a new repository** → nomme le repo
-> `M0-B2-sentiment-<prénom1>-<prénom2>` sur son compte GitHub, puis invite
+> `M0-B2-sentiment-<prenom1>-<prenom2>` sur son compte GitHub, puis invite
 > l'autre (Settings → Collaborators). Ne faites pas de fork.
-> Poste solo : `M0-B2-sentiment-<prénom>`, sans invitation.
+> Qui crée le repo : mettez-vous d'accord, à l'oral ou par écrit. À défaut,
+> c'est la personne dont le prénom vient en premier dans l'ordre alphabétique.
+> L'autre lui donne son identifiant GitHub, à l'oral ou par message.
+> 🧍 Poste solo : `M0-B2-sentiment-<prenom>`, sans invitation.
+>
+> Dans ce README, `<prenom>` = ton prénom en minuscules, sans accent.
 
 Brief **M0-B2 « Déployer une IA NLP packagée — sentiment FR chez Aubergine
 Hôtels »**, 8 h en 3 temps : séance 1 (tâches 1 à 4), travail individuel
@@ -20,6 +25,7 @@ les livrables et les critères. Ce README est votre tableau de bord au quotidien
 # 0. Clone le repo du binôme et crée ta branche
 #    (la personne invitée accepte d'abord l'invitation reçue par mail ;
 #     sans clé SSH, utilise l'adresse https://github.com/... du repo)
+#    🧍 Poste solo : tu clones ton propre repo, il n'y a pas d'invitation.
 git clone git@github.com:<user>/M0-B2-sentiment-<prenom1>-<prenom2>.git
 cd M0-B2-sentiment-<prenom1>-<prenom2>
 git switch -c <prenom>
@@ -32,16 +38,16 @@ docker compose up --build
 
 # 3. Vérifier (dans un autre terminal)
 curl http://localhost:8000/health        # API NLP
-open  http://localhost:8501              # UI Streamlit (Windows : ouvre l'URL dans ton navigateur)
+# UI Streamlit : ouvre http://localhost:8501 dans ton navigateur
 ```
 
 À l'arrêt : `Ctrl+C` puis `docker compose down` (les volumes `models/` et
 `logs/` sont conservés — le modèle HF n'est pas re-téléchargé au prochain `up`).
 
-> ⏱️ Le **1ᵉʳ démarrage** prend 3-5 min de build + 1-3 min de download du
-> modèle DistilCamemBERT (~270 Mo). C'est normal, ce n'est pas une panne :
+> ⏱️ Premier démarrage : plusieurs minutes (build puis téléchargement du
+> modèle DistilCamemBERT, ~270 Mo). C'est normal, ce n'est pas une panne :
 > suis l'avancement avec `docker compose logs -f api-nlp`. Les démarrages
-> suivants prennent moins de 30 s grâce au cache `models/`.
+> suivants : `api-nlp` passe `healthy` en moins d'une minute grâce au cache `models/`.
 
 ---
 
@@ -58,9 +64,10 @@ git push -u origin <prenom>
 
 # Intégrer dans main : ouvre une Pull Request sur GitHub
 #   base = main  ←  compare = <prenom>   puis « Merge pull request »
-# (en binôme, l'autre relit avant de merger ; en solo, tu merges ta propre PR)
+# (en binôme, l'autre relit avant de merger ; 🧍 poste solo : tu merges ta propre PR)
 
-# Récupérer ce que l'autre a mergé
+# Récupérer ce que l'autre a mergé (🧍 poste solo : ces trois lignes servent
+# seulement à mettre ta branche à jour avec `main`)
 git switch main && git pull
 git switch <prenom> && git merge main
 git push
@@ -71,7 +78,9 @@ git push
 - Tes livrables individuels vont dans **`rendu/<prenom>/`** : chacun a son
   dossier, donc pas de conflit.
 - Le `README.md` de la racine est commun : **une seule personne le modifie**,
-  l'autre lui envoie son texte.
+  l'autre lui envoie son texte. Qui : mettez-vous d'accord, à l'oral ou par
+  écrit. À défaut, c'est la personne dont le prénom vient en premier dans
+  l'ordre alphabétique. 🧍 Poste solo : tu le modifies seul·e.
 - Ne commite jamais directement sur `main`.
 - Messages de commit : `type(scope): description`.
 - Si `git merge main` annonce un conflit : ouvre le fichier, garde ce qu'il
@@ -158,6 +167,10 @@ n'as pas branché l'appel HTTP dans `services/ui-streamlit/app.py`.
 
 ### Séance 1 — en binôme (ou poste solo)
 
+Après la tâche 2, la formatrice poste 3 questions dans le fil
+Discord du brief. Y répondre est facultatif, à l'oral ou dans le fil, jusqu'à
+la fin de la séance.
+
 | # | Étape | Mini-cours | Durée |
 |---|---|---|---|
 | 1 | Créer le repo, démarrer la stack | (ce README) | 30 min |
@@ -165,6 +178,8 @@ n'as pas branché l'appel HTTP dans `services/ui-streamlit/app.py`.
 | 3 | Implémenter `/predict` + **mapping 5★ → 3 classes** | [`02_HuggingFace_Transformers`](./ressources/02_HuggingFace_Transformers_essentiel.md) | 1 h 15 |
 | 4 | Brancher l'UI Streamlit à l'API | [`03_Streamlit`](./ressources/03_Streamlit_essentiel.md) + [`04_API_Integration`](./ressources/04_API_Integration_essentiel.md) | 50 min |
 | ✔ | PR vers `main` | — | 10 min |
+
+**Après chaque modification de code : `docker compose up --build` (sinon le conteneur exécute l'ancienne version).** Voir [`01_DockerCompose`](./ressources/01_DockerCompose_essentiel.md).
 
 En binôme : l'un sur l'étape 3, l'autre sur l'étape 4, puis échange à
 mi-séance. Poste solo : étape 3 puis étape 4.
@@ -175,17 +190,19 @@ mi-séance. Poste solo : étape 3 puis étape 4.
 |---|---|---|---|
 | A | `ANALYSE.md` partie 1 : **schéma Mermaid** + comment lancer | 🔴 prioritaire | 1 h |
 | B | `ANALYSE.md` partie 2 : **≥ 3 reviews mal classées** + explication | 🔴 prioritaire | 1 h |
-| C | `postman_collection.json` (≥ 5 requêtes, cas limites) | 🟠 important | 45 min |
+| C | `postman_collection.json` (les 5 requêtes fournies + au moins 3 ajoutées, dont un texte trop long → 422 et un avis piégeux de ton choix) | 🟠 important | 45 min |
 | D | `ANALYSE.md` partie 3 : justification du mapping (½ page) | 🟠 important | 15 min |
 
 ### Séance 2 — finitions
 
 | # | Étape | Mini-cours | Durée |
 |---|---|---|---|
-| 5 | Logging Loguru | [`05_Loguru`](./ressources/05_Loguru_essentiel.md) | 30 min |
+| 5 | Logging Loguru (texte tronqué : `texte[:80]`) | [`05_Loguru`](./ressources/05_Loguru_essentiel.md) | 30 min |
 | 6 | Tests pytest `/predict` (≥ 3) | [`06_Pytest_API`](./ressources/06_Pytest_API_essentiel.md) | 35 min |
 | ✔ | 3 preuves dans le README + PR vers `main` + lien sur Simplonline | — | 10 min |
-| E/F/G | **Bonus** : healthcheck avec retry · `/predict/batch` · « pourquoi pas un LLM ? » | — | 30 min chacun |
+| E/F/G | **Bonus** : healthcheck personnalisé avec plus de tentatives · `/predict/batch` · « pourquoi pas un LLM ? » | — | 30 min chacun |
+
+**Après chaque modification de code : `docker compose up --build` (sinon le conteneur exécute l'ancienne version).** Voir [`01_DockerCompose`](./ressources/01_DockerCompose_essentiel.md).
 
 Cf. [`./ressources/README.md`](./ressources/README.md) pour le détail.
 
@@ -195,8 +212,9 @@ Cf. [`./ressources/README.md`](./ressources/README.md) pour le détail.
 
 1. **Une stack qui tourne** avec healthcheck `healthy`.
 2. **Le mapping 5★ → 3 classes implémenté et justifié** (le geste C6 N2).
-3. **L'UI Streamlit branchée à l'API** via le réseau docker interne
-   (nom de service `http://api-nlp:8000`, **pas** `localhost`).
+3. **L'UI Streamlit branchée à l'API** via le réseau docker interne :
+   l'interface appelle l'API via `API_URL` (valeur `http://api-nlp:8000` dans
+   `docker-compose.yml`), pas `localhost`.
 4. **≥ 3 tests pytest qui passent** depuis le conteneur.
 5. **Ton `rendu/<prenom>/ANALYSE.md`** : schéma Mermaid, reviews mal classées,
    justification du mapping.
@@ -211,6 +229,9 @@ curl -X POST http://localhost:8000/predict \
   -d '{"texte":"Personnel charmant, on reviendra !"}'
 docker compose exec api-nlp pytest -v              # tests PASSED
 ```
+
+Sous Windows (PowerShell), cette commande ne passe pas telle quelle : envoie la
+même requête depuis Swagger (`/docs`) ou Postman et colle la réponse.
 
 ---
 
@@ -232,14 +253,14 @@ docker compose ps                          # api-nlp doit être (healthy)
 
 | Symptôme | À tenter |
 |---|---|
-| `docker compose up` bloqué sur `pulling/building` | 1ᵉʳ build = 3-5 min + 1-3 min download modèle, patiente |
-| `/predict` renvoie toujours 501 | `inference.py` pas encore complété — normal |
+| `docker compose up` bloqué sur `pulling/building` | Premier démarrage : plusieurs minutes (build puis téléchargement du modèle), patiente |
+| `/predict` renvoie toujours 501 | `inference.py` pas encore complété, **ou image non reconstruite** : relance `docker compose up --build` |
 | `/predict` renvoie `"1 star"` au lieu de `"négatif"` | Mapping 5→3 pas implémenté |
 | L'UI affiche « API non branchée » | Compléter `app.py` dans `services/ui-streamlit/` |
-| `Connection refused` depuis l'UI | URL = `http://api-nlp:8000` (nom de service), pas `localhost` |
+| `Connection refused` depuis l'UI | `API_URL` = `http://api-nlp:8000` (nom de service), pas `localhost` |
 | `ModuleNotFoundError` | Rebuild : `docker compose build --no-cache api-nlp` |
 | Service `unhealthy` après 2 min | `docker compose logs api-nlp` (réseau / mémoire / chargement modèle) |
-| Conteneur tué sans message | Mémoire Docker < 4 Go : augmente-la dans Docker Desktop |
+| Conteneur tué sans message | Mémoire Docker inférieure à 6 Go : augmente-la dans Docker Desktop (au moins 6 Go) |
 
 Logs en temps réel : `docker compose logs -f api-nlp`.
 

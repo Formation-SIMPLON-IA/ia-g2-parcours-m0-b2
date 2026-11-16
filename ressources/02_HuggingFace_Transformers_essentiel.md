@@ -208,7 +208,7 @@ Symptôme → cause probable :
 | `Failed to import google.protobuf` | Dep manquante (`protobuf>=3.20,<5`) |
 | Pipeline qui retourne `[{'label': 'LABEL_0', 'score': ...}]` | Modèle sans `id2label` dans sa config — vérifier la model card |
 | Latence > 1 s par appel court | Le pipeline est re-instancié à chaque requête (pas chargé au lifespan) |
-| Conteneur qui exit OOMKilled | RAM insuffisante allouée à Docker Desktop (< 4 Go), CamemBERT en a besoin de ~1 Go |
+| Conteneur qui exit OOMKilled | RAM insuffisante allouée à Docker Desktop (moins de 6 Go ; il en faut au moins 6), CamemBERT en a besoin de ~1 Go |
 | `OSError: Can't load tokenizer` après changement de modèle | Cache HF corrompu, supprimer `./models/` et relancer `docker compose up --build` |
 
 ## Pour aller plus loin

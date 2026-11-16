@@ -11,7 +11,7 @@
 ## Ce que tu trouves ici
 | Fichier | Quand le mobiliser | Durée de lecture |
 | --- | --- | --- |
-| [`01_DockerCompose_essentiel.md`](./01_DockerCompose_essentiel.md) | Tâches 1, 2 (mise en route + analyse de la stack), Tâche 5 (volume `./logs`) | ~30 min |
+| [`01_DockerCompose_essentiel.md`](./01_DockerCompose_essentiel.md) | Tâches 1, 2 (mise en route + analyse de la stack), Tâche 5 (volume `./logs`) ; règle de reconstruction `docker compose up --build` après chaque modification de code (tâches 3, 4, 5 et 6) | ~30 min |
 | [`02_HuggingFace_Transformers_essentiel.md`](./02_HuggingFace_Transformers_essentiel.md) | Tâche 3 (implémenter `/predict` + mapping 5★→3) | ~35 min |
 | [`03_Streamlit_essentiel.md`](./03_Streamlit_essentiel.md) | Tâche 4 (UI utilisateur) | ~25 min |
 | [`04_API_Integration_essentiel.md`](./04_API_Integration_essentiel.md) | Tâche 4 (côté UI : httpx + gestion erreurs) | ~25 min |
@@ -42,6 +42,6 @@ complète utilement `03_Streamlit_essentiel.md`.
 ## Squelette de code
 Le squelette de code, ce sont les fichiers à la **racine de ce repo** (créé
 via « Use this template » — cf. [`README.md`](../README.md) racine). La stack
-tourne dès le clone via `docker compose up --build` (3-5 min de build au
+tourne dès le clone via `docker compose up --build` (plusieurs minutes au
 premier démarrage). 1 test pytest passe d'office, `/predict` renvoie 501
 (stub à compléter).
