@@ -219,7 +219,7 @@ l'interface, puis `docker compose start api-nlp`.
 | 5 | Logging Loguru (texte tronqué : `texte[:80]`) | [`05_Loguru`](./ressources/05_Loguru_essentiel.md) | 30 min |
 | 6 | Tests pytest `/predict` (≥ 3) | [`06_Pytest_API`](./ressources/06_Pytest_API_essentiel.md) | 35 min |
 | ✔ | 3 preuves dans le README + PR vers `main` + lien sur Simplonline | — | — |
-| E/F/G | **Bonus** : healthcheck personnalisé avec plus de tentatives · `/predict/batch` · « pourquoi pas un LLM ? » | — | — |
+| E/F/G/H | **Bonus**, détail dans [`BONUS.md`](./BONUS.md) : H, effet d'un autre découpage 5★ → 3 · G, « pourquoi pas un LLM ? » · F, `/predict/batch` · E, healthcheck dimensionné | — | — |
 
 **Après chaque modification de code : `docker compose up --build` (sinon le conteneur exécute l'ancienne version).** Voir [`01_DockerCompose`](./ressources/01_DockerCompose_essentiel.md).
 
